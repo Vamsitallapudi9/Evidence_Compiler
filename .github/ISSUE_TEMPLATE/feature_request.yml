@@ -1,0 +1,11 @@
+name: Feature or idea
+description: Suggest an improvement (see docs/roadmap.md first)
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes: {label: Problem, description: "What are you trying to do, and what gets in the way?"}
+    validations: {required: true}
+  - type: textarea
+    id: proposal
+    attributes: {label: Proposal, description: "How should it work? How does it keep the evidence invariant?"}

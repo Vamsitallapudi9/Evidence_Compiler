@@ -1,0 +1,26 @@
+name: Bug report
+description: Something doesn't work as documented
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Security issue?** Don't file it here. Use *Security → Report a vulnerability* (see SECURITY.md).
+        **Never paste API keys, DSNs, or private document contents.**
+  - type: textarea
+    id: what
+    attributes: {label: What happened, description: "What you did, what you expected, what you saw."}
+    validations: {required: true}
+  - type: textarea
+    id: repro
+    attributes: {label: Steps to reproduce, description: "Ideally with the demo data (make demo-data)."}
+    validations: {required: true}
+  - type: input
+    id: version
+    attributes: {label: Commit, description: "Output of: git rev-parse --short HEAD"}
+  - type: input
+    id: env
+    attributes: {label: Environment, description: "OS, Python version, Node version, LLM provider/model"}
+  - type: textarea
+    id: logs
+    attributes: {label: Logs, description: "API terminal output or the run's error (redact secrets).", render: text}
