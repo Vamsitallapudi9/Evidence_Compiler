@@ -50,6 +50,10 @@ log = logging.getLogger(__name__)
 Emit = Callable[[RunEvent], None]
 
 
+def _n(count: int, singular: str, plural: str | None = None) -> str:
+    return f"{count} {singular if count == 1 else plural or singular + 's'}"
+
+
 @dataclass
 class PipelineOptions:
     """Switches for ablation studies; defaults are the full system."""
@@ -118,14 +122,15 @@ class Pipeline:
         plan = self._plan(question, sources, cards)
         say(
             "plan",
-            f"{len(plan.sub_questions)} sub-questions, {len(plan.hypotheses)} hypotheses to test",
+            f"{_n(len(plan.sub_questions), 'sub-question')}, "
+            f"{_n(len(plan.hypotheses), 'hypothesis', 'hypotheses')} to test",
             sub_questions=plan.sub_questions,
             hypotheses=plan.hypotheses,
         )
 
         say("retrieve", "Searching documents…")
         documents = self._retrieve(question, plan, source_ids)
-        say("retrieve", f"Retrieved {len(documents)} document passages", count=len(documents))
+        say("retrieve", f"Retrieved {_n(len(documents), 'document passage')}", count=len(documents))
 
         rows: list[EvidenceItem] = []
         if cards and self.options.use_sql:
@@ -146,9 +151,9 @@ class Pipeline:
                 warnings=warnings,
             )
 
-        say("claims", f"Drafting claims from {len(pool)} evidence items…")
+        say("claims", f"Drafting claims from {_n(len(pool), 'evidence item')}…")
         draft = self._draft(question, plan, pool, sources)
-        say("claims", f"Drafted {len(draft.claims)} claims")
+        say("claims", f"Drafted {_n(len(draft.claims), 'claim')}")
 
         say("verify", "Running deterministic checks…")
         works: dict[str, ClaimWork] = {}
@@ -160,7 +165,7 @@ class Pipeline:
 
         entailments: dict[str, Entailment | None] = {}
         if self.options.verify_entailment and passed:
-            say("verify", f"Verifying {len(passed)} claims against their evidence…")
+            say("verify", f"Verifying {_n(len(passed), 'claim')} against their evidence…")
             entailments = self._entail(passed, sources, warnings)
 
         claims: list[Claim] = [classify(w, entailments.get(w.claim.id)) for w in works.values()]
@@ -293,7 +298,7 @@ class Pipeline:
                 result = self.executor.run(query.target, query.sql, cards, purpose=query.purpose)
                 say(
                     "sql",
-                    f"{query.purpose}: {len(result.evidence)} rows",
+                    f"{query.purpose}: {_n(len(result.evidence), 'row')}",
                     sql=result.query.sql,
                     rows=len(result.evidence),
                 )

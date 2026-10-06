@@ -25,7 +25,7 @@ class FakeLLM:
     name: str = "fake"
 
     def model_for(self, tier: Tier) -> str:
-        return "fake"
+        return self.name
 
     calls: list[FakeCall] = field(default_factory=list)
 
@@ -47,7 +47,7 @@ class FakeLLM:
         result = out if isinstance(out, schema) else schema.model_validate(out)
         # Rough token estimate (4 chars/token) so the UI's counters can be exercised.
         usage = Usage(
-            model="fake",
+            model=self.name,
             input_tokens=(len(system) + len(prompt)) // 4,
             output_tokens=len(result.model_dump_json()) // 4,
         )

@@ -307,8 +307,8 @@ const claims: Claim[] = [
       },
     ],
     checks: [
-      { name: "quote_found", passed: true, detail: "Quote appears verbatim in the evidence text (page 2)." },
-      { name: "numbers_match", passed: true, detail: "8.4%, $119.3M and $109.3M all appear in the cited passage." },
+      { name: "quotes_verbatim", passed: true, detail: "Quote appears verbatim in the evidence text (page 2)." },
+      { name: "numbers_backed", passed: true, detail: "8.4%, $119.3M and $109.3M all appear in the cited passage." },
     ],
     entailment: "supports",
     entailment_note: "The passage states the Q2 revenue figure and the 8.4% decrease relative to Q1.",
@@ -323,9 +323,9 @@ const claims: Claim[] = [
     calculation_id: "calc_share_eu_9f0e1d2c",
     links: [{ evidence_id: "ev_calc_share_5e6f7a8b", relation: "calculated_from" }],
     checks: [
-      { name: "calculation_recomputed", passed: true, detail: "share_of_total recomputed deterministically: 71.0%." },
-      { name: "rounding_tolerance", passed: true, detail: "“approximately 71%” is within tolerance of 71.0%." },
-      { name: "inputs_traceable", passed: true, detail: "Both inputs resolve to SQL results over regional_sales." },
+      { name: "calculation", passed: true, detail: "share_of_total recomputed deterministically: 71.0%." },
+      { name: "numbers_backed", passed: true, detail: "“approximately 71%” is within tolerance of 71.0%." },
+      { name: "provenance", passed: true, detail: "Both inputs resolve to SQL results over regional_sales." },
     ],
     entailment: "supports",
     entailment_note: "The calculation output matches the claimed share.",
@@ -345,8 +345,8 @@ const claims: Claim[] = [
       },
     ],
     checks: [
-      { name: "ordering_verified", passed: true, detail: "Enterprise is row 1 of 3 when ordered by revenue_change_usd ascending." },
-      { name: "numbers_match", passed: true, detail: "-6,200,000 USD matches “down $6.2M”." },
+      { name: "provenance", passed: true, detail: "SQL aggregate over customer_segments; the chain ends at the source file." },
+      { name: "numbers_backed", passed: true, detail: "-6,200,000 USD matches “down $6.2M”." },
     ],
     entailment: "supports",
     entailment_note: "The query result ranks Enterprise first by revenue decrease.",
@@ -365,8 +365,8 @@ const claims: Claim[] = [
       { evidence_id: "ev_calc_share_5e6f7a8b", relation: "depends_on" },
     ],
     checks: [
-      { name: "has_supporting_evidence", passed: true, detail: "Links to four evidence items." },
-      { name: "causal_language", passed: false, detail: "Causal claim (“driven by”) is not directly established by any single source." },
+      { name: "citations_exist", passed: true, detail: "Links to four evidence items." },
+      { name: "quotes_verbatim", passed: true, detail: "Each cited span appears verbatim in its evidence." },
     ],
     entailment: "partial",
     entailment_note:
@@ -381,7 +381,7 @@ const claims: Claim[] = [
     status: "unsupported",
     links: [],
     checks: [
-      { name: "has_supporting_evidence", passed: false, detail: "No evidence item mentions healthcare customers." },
+      { name: "has_citations", passed: false, detail: "No evidence item mentions healthcare customers." },
     ],
     entailment: null,
     reason:
@@ -398,8 +398,8 @@ const claims: Claim[] = [
       { evidence_id: "ev_pdf_c4d5e6f708192a3b", relation: "contradicts", quote: "no material pricing changes were made" },
     ],
     checks: [
-      { name: "security_flags", passed: false, detail: "Only supporting passage is flagged as a prompt-injection attempt." },
-      { name: "contradiction", passed: false, detail: "Contradicted by page 3: average selling prices were flat." },
+      { name: "citations_exist", passed: false, detail: "Cited evidence id was never shown to the model (fabricated citation)." },
+      { name: "provenance", passed: false, detail: "Primary claim has no supporting primary evidence." },
     ],
     entailment: "does_not_support",
     entailment_note: "The flagged passage is an instruction, not a factual statement about pricing.",
