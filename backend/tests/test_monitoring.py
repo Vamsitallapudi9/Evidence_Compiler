@@ -128,8 +128,9 @@ def test_api_exposes_usage_cancel_and_live_events(settings, demo_dir):
         assert "llm_model" in health and "pricing_configured" in health
 
 
-def test_openai_client_uses_bounded_timeout(settings):
+def test_openai_client_uses_bounded_timeout(settings, monkeypatch):
     from evidence_compiler.llm.openai_client import OpenAIClient
 
+    monkeypatch.setenv("OPENAI_API_KEY", "test")
     client = OpenAIClient(replace(settings, llm_timeout_s=42.0, llm_max_retries=1))
     assert client.client.timeout == 42.0 and client.client.max_retries == 1

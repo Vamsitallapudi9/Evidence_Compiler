@@ -1,4 +1,17 @@
 import os
+
+# Hermetic tests: ignore the developer's .env and any provider keys in the shell.
+os.environ["EC_SKIP_DOTENV"] = "1"
+for _var in [
+    v for v in os.environ if v.startswith("EC_") and not v.startswith(("EC_SKIP", "EC_TEST_"))
+] + [
+    "OPENAI_API_KEY",
+    "ANTHROPIC_API_KEY",
+    "ANTHROPIC_AUTH_TOKEN",
+    "HF_TOKEN",
+]:
+    os.environ.pop(_var, None)
+
 import subprocess
 import sys
 from dataclasses import replace

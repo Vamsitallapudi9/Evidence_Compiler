@@ -7,7 +7,8 @@ from pathlib import Path
 from dotenv import load_dotenv
 
 REPO_ROOT = Path(__file__).resolve().parents[3]
-load_dotenv(REPO_ROOT / ".env")
+if not os.getenv("EC_SKIP_DOTENV"):  # tests set this so a developer's .env can't leak in
+    load_dotenv(REPO_ROOT / ".env")
 
 
 def _bool(name: str, default: bool) -> bool:
@@ -22,7 +23,7 @@ _DEFAULT_MODELS = {
 
 
 def _provider() -> str:
-    return os.getenv("EC_LLM_PROVIDER", "anthropic").strip().lower()
+    return os.getenv("EC_LLM_PROVIDER", "openai").strip().lower()
 
 
 def _model(env: str, index: int) -> str:
