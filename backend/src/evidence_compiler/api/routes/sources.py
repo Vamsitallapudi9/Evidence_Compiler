@@ -84,9 +84,15 @@ async def upload_source(file: UploadFile, ctx: AppContext = Depends(get_ctx)) ->
         raise HTTPException(
             400, f"Unsupported file type '{suffix}'. Allowed: pdf, csv, xlsx, docx, txt, md."
         )
-    data = await file.read()
-    if len(data) > ctx.settings.max_upload_mb * 1024 * 1024:
-        raise HTTPException(413, f"File exceeds {ctx.settings.max_upload_mb} MB limit.")
+    limit = ctx.settings.max_upload_mb * 1024 * 1024
+    chunks: list[bytes] = []
+    size = 0
+    while chunk := await file.read(1024 * 1024):  # bounded read: never buffer past the limit
+        size += len(chunk)
+        if size > limit:
+            raise HTTPException(413, f"File exceeds {ctx.settings.max_upload_mb} MB limit.")
+        chunks.append(chunk)
+    data = b"".join(chunks)
     safe = re.sub(r"[^A-Za-z0-9._-]+", "_", name)
     path = ctx.settings.uploads_dir / safe
     path.write_bytes(data)

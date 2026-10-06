@@ -12,7 +12,12 @@ import pandas as pd
 
 from evidence_compiler.core.ids import content_id, file_hash
 from evidence_compiler.core.models import Source, SourceKind
-from evidence_compiler.ingestion.base import IngestionError, IngestResult, SchemaCard
+from evidence_compiler.ingestion.base import (
+    IngestionError,
+    IngestResult,
+    SchemaCard,
+    check_zip_container,
+)
 from evidence_compiler.sql.duckdb_store import TabularStore
 
 
@@ -39,6 +44,8 @@ class TabularConnector:
         data = path.read_bytes()
         suffix = path.suffix.lower()
         kind = SourceKind.CSV if suffix == ".csv" else SourceKind.XLSX
+        if kind == SourceKind.XLSX:
+            check_zip_container(data)
         try:
             if kind == SourceKind.CSV:
                 frames = {"": pd.read_csv(path)}

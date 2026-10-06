@@ -276,3 +276,32 @@ def test_huggingface_connector(ctx):
     assert json.loads(
         ctx.tabular.query("SELECT meta FROM hf_reviews_train LIMIT 1", 1)[1][0][0]
     ) == {"k": 0}
+
+
+def test_zip_bombs_are_refused():
+    import zipfile
+
+    from evidence_compiler.ingestion.base import IngestionError, check_zip_container
+
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("xl/big.xml", b"0" * (50 * 1024 * 1024))  # ~50 MB of zeros, tiny compressed
+    with pytest.raises(IngestionError, match="unsafe size"):
+        check_zip_container(buf.getvalue())
+    with pytest.raises(IngestionError, match="bad zip"):
+        check_zip_container(b"not a zip")
+
+
+def test_upload_size_limit_is_enforced_while_streaming(settings, demo_dir):
+    from dataclasses import replace
+
+    from fastapi.testclient import TestClient
+
+    from evidence_compiler.api.main import create_app
+    from evidence_compiler.app import AppContext
+    from tests.fake_scenario import make_fake
+
+    ctx = AppContext(replace(settings, max_upload_mb=1), llm=make_fake())
+    with TestClient(create_app(ctx)) as client:
+        r = client.post("/api/sources", files={"file": ("big.csv", b"a,b\n" + b"1,2\n" * 400_000)})
+    assert r.status_code == 413

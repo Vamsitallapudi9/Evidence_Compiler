@@ -11,6 +11,24 @@ class IngestionError(ValueError):
     pass
 
 
+MAX_UNCOMPRESSED_BYTES = 300 * 1024 * 1024
+MAX_COMPRESSION_RATIO = 200
+
+
+def check_zip_container(data: bytes) -> None:
+    """Refuse zip bombs before parsing .xlsx / .docx (both are zip archives)."""
+    import io
+    import zipfile
+
+    try:
+        with zipfile.ZipFile(io.BytesIO(data)) as zf:
+            total = sum(i.file_size for i in zf.infolist())
+    except zipfile.BadZipFile as exc:
+        raise IngestionError("file is not a valid Office document (bad zip container)") from exc
+    if total > MAX_UNCOMPRESSED_BYTES or (data and total / len(data) > MAX_COMPRESSION_RATIO):
+        raise IngestionError("document expands to an unsafe size when decompressed")
+
+
 @dataclass
 class SchemaCard:
     """A description of a queryable table, used for retrieval and SQL generation."""

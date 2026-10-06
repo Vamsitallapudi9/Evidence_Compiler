@@ -1,5 +1,6 @@
 """Upload the demo corpus (and the demo Postgres) to a running API."""
 
+import os
 import sys
 from pathlib import Path
 
@@ -7,7 +8,7 @@ import httpx
 
 API = sys.argv[1] if len(sys.argv) > 1 else "http://localhost:8000"
 DEMO = Path(__file__).parent / "generated"
-DSN = "postgresql://ec_reader:ec_reader_local_only@localhost:5432/ec_demo"
+DSN = os.getenv("EC_PG_DSN", "postgresql://ec_reader:ec_reader_local_only@localhost:5432/ec_demo")
 
 with httpx.Client(base_url=API, timeout=60) as client:
     for name in [

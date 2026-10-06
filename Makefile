@@ -19,7 +19,7 @@ load-demo:        ## ingest the demo corpus into a running API (make api first)
 	$(PY) data/demo/load_demo.py
 
 api:              ## FastAPI on :8000
-	$(PY) -m uvicorn evidence_compiler.api.main:app --reload --port 8000 --app-dir backend/src
+	$(PY) -m uvicorn evidence_compiler.api.main:app --reload --host 127.0.0.1 --port 8000 --app-dir backend/src
 
 web:              ## Vite dev server on :5173 (proxies /api to :8000)
 	cd frontend && npm run dev

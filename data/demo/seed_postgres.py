@@ -6,6 +6,7 @@ Creates database `ec_demo` and role `ec_reader` (SELECT-only), and prints the DS
 register as a source.
 """
 
+import os
 import sys
 from pathlib import Path
 
@@ -14,7 +15,9 @@ from psycopg import sql
 
 DB = "ec_demo"
 ROLE = "ec_reader"
-ROLE_PASSWORD = "ec_reader_local_only"  # local demo credential, not a secret
+# Local demo credential for a read-only role on localhost. Not a secret; override it with
+# EC_DEMO_PG_PASSWORD (and set EC_PG_DSN to match) if your Postgres is reachable by others.
+ROLE_PASSWORD = os.getenv("EC_DEMO_PG_PASSWORD", "ec_reader_local_only")
 SEED = Path(__file__).parent / "generated" / "seed.sql"
 
 

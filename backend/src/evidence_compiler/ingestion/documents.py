@@ -17,7 +17,7 @@ from evidence_compiler.core.models import (
     SourceKind,
     TextLocation,
 )
-from evidence_compiler.ingestion.base import IngestionError, IngestResult
+from evidence_compiler.ingestion.base import IngestionError, IngestResult, check_zip_container
 from evidence_compiler.security.untrusted import scan_for_injection
 
 _MAX_PARAGRAPH = 1500  # split very long blocks so citations stay precise
@@ -212,6 +212,7 @@ def ingest_html(data: bytes, *, name: str | None, url: str, metadata: dict) -> I
 def ingest_docx(data: bytes, *, name: str, uri: str, metadata: dict | None = None) -> IngestResult:
     import docx  # python-docx
 
+    check_zip_container(data)
     try:
         document = docx.Document(io.BytesIO(data))
     except Exception as exc:  # python-docx raises several unrelated types
