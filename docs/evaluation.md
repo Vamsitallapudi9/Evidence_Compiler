@@ -1,5 +1,10 @@
 # Evaluation methodology
 
+> **Status:** the harness is built and runs in CI with a scripted model
+> (`make eval-fake`). **No real results have been published yet.** When they are, they
+> will be committed alongside the exact model IDs and the generated report from
+> `eval/results/`.
+
 **Research question:** does explicit claim-level evidence compilation reduce unsupported
 claims and improve evidence attribution compared with conventional RAG?
 
@@ -52,6 +57,13 @@ reruns reproducible.
 * The corpus is small and synthetic. It is designed to make specific failure modes
   measurable, not to estimate real-world accuracy.
 * Phase 1 runs no ablations. `PipelineOptions` provides the switches for V2.
+
+## Cost
+
+A full run makes roughly 22 × (1 call for A + 1 for B + about 10–30 for C), plus judge
+calls (about 2 + the number of citations per answer). Responses are cached in
+`eval/.cache`, so reruns with unchanged prompts are free. Start with a subset
+(`--questions q01,q10`) to check cost on your provider.
 
 ## Running
 

@@ -9,9 +9,9 @@ and `claude-haiku-4-5` (fast tier), configurable via env. Forced tool use is not
 because current Claude models reject it. A `FakeLLM` drives tests and a disk cache
 makes evaluations reproducible.
 
-**Update (OpenAI adapter).** `llm/openai_client.py` uses the Responses API with strict
-structured outputs (`responses.parse(text_format=...)`). With `EC_LLM_PROVIDER=openai`
-both tiers default to `gpt-6-luna`. When only one model is used, the "fast" and
+**Update (OpenAI adapter, now the default).** `llm/openai_client.py` uses the Responses API with strict
+structured outputs (`responses.parse(text_format=...)`). OpenAI is the default provider (`EC_LLM_PROVIDER=openai`), with both tiers
+defaulting to `gpt-6-luna`. When only one model is used, the "fast" and
 "strong" tiers share it.
 
 **Consequences.** Adding Bedrock or a local model means adding one adapter file.

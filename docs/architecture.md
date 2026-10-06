@@ -38,12 +38,12 @@ This is enforced structurally, not by prompting:
 |---|---|---|
 | Plan | LLM (fast tier) | Sub-questions, BM25 queries, **hypotheses to test** (tempting explanations are tested, not assumed) |
 | Retrieve | BM25 | Reciprocal-rank fusion over question + sub-questions + queries |
-| Structured | LLM writes SQL → `sql/validator.py` → `sql/executor.py` | One repair attempt on rejection; rows become evidence |
+| Structured | LLM writes SQL → `sql/validator.py` → `sql/executor.py` | One repair attempt on rejection; rows become evidence. When a result is cut off, the drafting step is told, so it doesn't reason from missing rows |
 | Draft claims | LLM (strong) | Evidence wrapped as untrusted `<evidence>` data |
-| Deterministic checks | code | `citations_exist`, `has_citations`, `quotes_verbatim`, `calculation`, `numbers_backed`, `provenance` |
+| Deterministic checks | code | `type_from_evidence` (the claim type is set from the cited evidence, not the model's label), `citations_exist`, `has_citations`, `quotes_verbatim`, `calculation`, `numbers_backed`, `provenance` |
 | Entailment | LLM, isolated | Sees only the claim, its cited evidence and the calc trace |
 | Classify | code | Integrity failure → REJECTED; other failure → UNSUPPORTED; entailment partial → PARTIAL |
-| Compile | LLM + code post-check | Sentences without a valid marker, or with numbers absent from their claims, are removed and reported |
+| Compile | LLM + code post-check | Claims are given short markers (`[c:1]`), which code maps back to claim IDs. Sentences without a valid marker, or with numbers absent from their claims, are removed and reported |
 
 `PipelineOptions` exposes switches (`use_sql`, `verify_entailment`, `enforce_checks`,
 `test_hypotheses`) for the planned ablation studies.
@@ -75,3 +75,30 @@ This is enforced structurally, not by prompting:
   original dataset row number. Class labels gain a `<col>_name` column. Rows load into
   DuckDB for SQL, and long text columns also become PRIMARY passage evidence (one per
   row) that is searchable and quotable. The licence is recorded from the dataset card.
+
+## Run monitoring (`llm/meter.py`, `app.py`)
+
+Each run gets a `MeteredLLM` wrapped around the configured client:
+
+- **Call log:** every model call is recorded twice, when it starts and when it ends,
+  with its task, a human-readable label ("Verifying claim 3 of 20"), model, token
+  counts and duration.
+- **Live streaming:** the run manager streams these records as `llm` events, plus a
+  `heartbeat` every ~2s (alive, seconds since the last activity, current step, usage
+  totals).
+- **Persistence:** usage is saved after every call, so totals survive a crash.
+- **Cancellation:** checked before every call and at every step boundary.
+- **Startup recovery:** on startup, runs left `pending` or `running` by a previous
+  process are marked `failed` with an `Interrupted:` error, instead of hanging forever.
+
+## LLM providers (`llm/`)
+
+`LLMClient.generate(task, system, prompt, schema, tier)` returns a validated Pydantic
+object. Adapters may also implement `generate_with_usage` to report tokens.
+
+| Provider | Adapter | Structured output | Defaults |
+|---|---|---|---|
+| OpenAI (default) | `openai_client.py` | Responses API, `responses.parse(text_format=…)`, strict JSON schema | `gpt-6-luna` for both tiers |
+| Anthropic | `anthropic_client.py` | `messages.parse(output_format=…)` (forced tool use is rejected by current models) | `claude-opus-5-5` / `claude-haiku-4-5` |
+
+`FakeLLM` drives the tests. `CachingLLM` makes benchmark reruns reproducible.

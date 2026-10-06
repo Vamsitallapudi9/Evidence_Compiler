@@ -1,121 +1,104 @@
 # Evidence Compiler
 
-AI systems are good at generating answers but weak at making the evidential basis of
-those answers explicit. **Evidence Compiler** represents source evidence, claims,
-derivations and interpretations as structured objects and compiles them into
-*auditable answers*. You can click any important statement and see exactly which
-passage, table row, SQL result or deterministic calculation it rests on, and what the
-system could **not** establish.
+**Answers you can check.** Ask a question about your documents and data. Every
+statement in the answer links to the exact passage, table row, SQL query or
+calculation behind it. Anything the evidence doesn't support is marked as
+unsupported, not smoothed over.
 
-> **Core rule.** Every important claim must either trace back to primary source
-> evidence, be deterministically derived from primary evidence, or be explicitly
-> labelled as an AI-supported interpretation. Otherwise it is unsupported.
+[![ci](https://github.com/Vamsitallapudi9/Evidence_Compiler/actions/workflows/ci.yml/badge.svg)](https://github.com/Vamsitallapudi9/Evidence_Compiler/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-This is not a claim to "solve hallucination". The aim is narrower and testable: make
-the provenance of an answer inspectable, and measure whether claim-level evidence
-compilation reduces unsupported statements compared with conventional RAG.
+![Answer with typed, clickable claims](docs/images/answer.png)
 
-## How it differs from RAG
+## Why
 
-| | RAG / RAG + citations | Evidence Compiler |
+LLM answers mix facts, arithmetic, guesses and made-up details into one fluent
+paragraph. Citations help a little, but they point at whole documents, not at the
+specific claim. Evidence Compiler splits an answer into **claims** and gives each one a
+type:
+
+| Type | Meaning | Backed by |
 |---|---|---|
-| Retrieved material | context for the model | typed, content-addressed **evidence objects** |
-| Unit of answer | paragraph | **atomic claims**, each linked to evidence |
-| Numbers | whatever the model writes | read from evidence or computed by a **deterministic calculation engine** |
-| Tables / databases | flattened into text | **validated read-only SQL**; each result row is evidence with its query |
-| Citations | point at a chunk | verbatim quote spans, checked to exist; fabricated IDs are **rejected** |
-| Unsupported statements | blend in | **explicitly listed**, including tested-and-failed hypotheses |
-| The model as a source | implicit | **impossible by construction**: the model has no code path that creates evidence |
+| **Primary** | Stated in a source | A verbatim quote, located to the page |
+| **Derived** | Computed from sources | A deterministic calculation or SQL query you can rerun |
+| **AI interpretation** | A reasoned conclusion | Labelled as such, with the evidence it rests on |
+| **Unsupported** | Not established | Shown explicitly, never cited |
 
-## Example
+**The core rule: model output can never become evidence.** Only source connectors,
+the SQL engine and the calculator can create evidence. The model can only *point*
+at it, and code checks every pointer.
 
-Ask *"Why did Q2 revenue decline?"* over the demo corpus (two quarterly-report PDFs, a
-regional sales CSV, a customer-segment workbook and a CRM Postgres database). The output
-has this shape (illustrative, taken from the scripted end-to-end test in
-`backend/tests/fake_scenario.py`; live model output will be worded differently):
+## What it does
 
-```
-Q2 revenue declined 8.4% to $114.0 million.            PRIMARY  q2_fy2026_report.pdf p.1 (quote highlighted)
-Europe accounted for approximately 71% of the decline. DERIVED  share_of_total: −7,400,000 / −10,400,000 × 100 = 71.15%
-                                                                ← SQL over regional_sales.csv (query shown)
-Enterprise was the largest negative segment (−$6.9M).  DERIVED  SQL aggregate over customer_segments.xlsx
-Europe appears to be the primary driver.               AI INTERPRETATION, inferred from the rows above
-"Healthcare customers caused the decline."             UNSUPPORTED (tested hypothesis; Healthcare revenue grew)
-```
+- **Reads your sources**: PDF, Word, text, CSV, Excel, PostgreSQL, links (web pages,
+  Google Docs, arXiv…) and Hugging Face datasets.
+- **Checks every claim in code**:
+  - the cited evidence exists
+  - quotes are verbatim
+  - each number matches its evidence
+  - each calculation reruns
+  - the provenance chain ends at a source
+- **Then a second, isolated model check** confirms the evidence actually supports
+  the claim.
+- **Tests tempting explanations** ("healthcare customers caused it") and reports the
+  ones the evidence doesn't back.
+- **Shows its work**: a claim inspector, an evidence graph, and a live run monitor
+  with token counts, the current step, and stuck detection.
 
-## Architecture
+| Claim inspector | Live run monitor |
+|---|---|
+| ![Claim inspector](docs/images/inspector.png) | ![Run monitor](docs/images/run-monitor.png) |
 
-```
-question → plan (sub-questions, search terms, hypotheses to test)
-         → retrieve: BM25 over document evidence  +  LLM-written SQL → sqlglot validation → read-only execution
-         → draft claims (cite evidence IDs, verbatim quotes, request calculations by name)
-         → deterministic checks: IDs exist · quotes verbatim · calculation runs · numbers backed · provenance valid
-         → isolated entailment check (model sees only the claim + its cited evidence)
-         → classify (primary / derived / interpretation / unsupported / rejected)
-         → compile prose from verified claims, post-check every sentence → answer + evidence graph
-```
+<sub>Screenshots use the bundled fictional demo data and a scripted model.</sub>
 
-The LLM handles interpretation, claim drafting, semantic verification and prose.
-Deterministic code handles calculations, SQL validation, IDs, quote matching, number
-checks, provenance and metrics. See [docs/architecture.md](docs/architecture.md) and
-the [ADRs](docs/adr/).
+## Quickstart
 
-```
-backend/src/evidence_compiler/
-  core/        models, content-addressed IDs, number parsing, provenance invariants, graph
-  ingestion/   PDF, CSV/Excel (→ DuckDB), Word/HTML/text, links (safe fetch), Hugging Face, Postgres
-  retrieval/   Retriever protocol + BM25
-  sql/         sqlglot validator, read-only executors (DuckDB, Postgres)
-  calc/        closed set of Decimal operations
-  llm/         LLMClient protocol, OpenAI + Claude adapters (structured outputs), cache, fake
-  pipeline/    schemas, prompts, verification, compiler, orchestrator
-  security/    untrusted-text delimiting, prompt-injection flags
-  store/, api/ SQLite app state, FastAPI + SSE
-frontend/      React + TypeScript UI: answer with typed claim spans, claim inspector, evidence graph
-eval/          benchmark questions, baselines A/B, judge, metrics, report
-data/demo/     deterministic demo corpus generator + Postgres seed
-```
-
-## Quickstart (macOS, everything local except the LLM API)
+Requires Python 3.12+, Node 20.19+, and an OpenAI or Anthropic API key. PostgreSQL is optional.
 
 ```bash
-cp .env.example .env               # set EC_LLM_PROVIDER and OPENAI_API_KEY or ANTHROPIC_API_KEY
-make setup                         # backend venv + frontend deps
-make check-llm                     # confirm key + model ID work
-brew install postgresql@17 && brew services start postgresql@17
-make db-seed                       # demo corpus + ec_demo DB + read-only ec_reader role
-make dev                           # API :8000, UI http://localhost:5173
-make load-demo                     # (other terminal) ingest the demo corpus + Postgres
+git clone https://github.com/Vamsitallapudi9/Evidence_Compiler.git && cd Evidence_Compiler
+cp .env.example .env          # add your API key
+make setup                    # Python venv + frontend packages
+make check-llm                # confirms the key and model work (< 1 cent)
+make demo-data && make dev    # demo corpus; API :8000, UI http://localhost:5173
 ```
 
-Then ask *"Why did Q2 revenue decline?"*. Postgres is optional: everything else works
-without it.
+Add sources in the sidebar, or load the demo with `make load-demo`. Then ask
+*"Why did Q2 revenue decline?"*.
+Full setup, including Postgres: [docs/getting-started.md](docs/getting-started.md).
 
-```bash
-make test        # backend (pytest) + frontend (vitest); no API key needed
-make eval-fake   # smoke-test the benchmark harness offline
-make eval        # real A/B/C benchmark (uses the configured LLM; responses cached in eval/.cache)
+## How it works
+
+```
+question → plan → retrieve (BM25 + validated read-only SQL) → draft claims
+        → code checks → isolated model check → classify → compile answer
 ```
 
-## Evaluation
-
-`eval/` compares **A** (BM25 RAG), **B** (RAG + chunk citations) and **C** (Evidence
-Compiler) on 22 questions with known ground truth: lookups, derived values,
-multi-source "why" questions, SQL questions, unanswerable questions, a causal trap and
-a prompt-injection probe. Metrics include answer accuracy, derived-fact accuracy,
-**unsupported claim rate**, citation correctness, attribution accuracy, abstention and
-provenance completeness. Methodology and limitations are in
-[docs/evaluation.md](docs/evaluation.md). **No results are included until the benchmark
-has been run**; `make eval` writes them to `eval/results/`.
+The model plans, drafts and phrases. Code does everything that can be checked:
+calculations, SQL validation, quote matching, number checks, provenance. Details are in
+[docs/architecture.md](docs/architecture.md).
 
 ## Status
 
-Phase 1 (MVP) covers ingestion of PDF, CSV, Excel, Word, text, Postgres, **links** (PDFs,
-web pages, Google Docs/Sheets/Drive, GitHub, arXiv — fetched and snapshotted server-side;
-paste a link into a question to answer from it) and **Hugging Face datasets** (by name;
-evenly sampled across the split, tables queried with SQL, long text columns indexed as
-passages), claim-level provenance,
-deterministic calculations, verification, unsupported-claim detection, a basic
-evidence graph, the UI and the minimal benchmark. Planned for V2: contradiction
-detection, source authority, temporal/version-aware evidence, embeddings, ablation
-studies, observability and cost tracking, and a human verification workflow.
+**Phase 1 MVP: working, not production software.** It is a single-user, local tool
+with **no authentication**. Run it on your own machine, not on a shared network. The
+A/B/C benchmark (RAG vs RAG + citations vs Evidence Compiler) is built, but **no
+results are published yet**: they will come from real runs, not estimates. Known gaps
+are listed openly in [docs/limitations.md](docs/limitations.md).
+
+## Documentation
+
+| | |
+|---|---|
+| [Getting started](docs/getting-started.md) | Install, run, troubleshoot |
+| [Configuration](docs/configuration.md) | Every setting |
+| [Data sources](docs/data-sources.md) | Formats, links, Hugging Face, limits |
+| [Architecture](docs/architecture.md) | Pipeline, evidence model, invariants |
+| [API](docs/api.md) | REST and live-event endpoints |
+| [Security](docs/security.md) | Threat model and mitigations |
+| [Evaluation](docs/evaluation.md) | Benchmark design and how to run it |
+| [Limitations](docs/limitations.md) | What it does not do (yet) |
+| [Roadmap](docs/roadmap.md) | Phase 2 and beyond |
+| [Decisions (ADRs)](docs/adr/) | Why things are the way they are |
+
+[Contributing](CONTRIBUTING.md) · [Security policy](SECURITY.md) · [Code of conduct](CODE_OF_CONDUCT.md) · [Changelog](CHANGELOG.md) · [MIT License](LICENSE)
