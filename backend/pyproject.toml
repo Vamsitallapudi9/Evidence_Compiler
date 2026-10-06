@@ -2,6 +2,7 @@
 name = "evidence-compiler"
 version = "0.1.0"
 description = "Evidence-backed answers: claims compiled against primary source evidence."
+license = "MIT"
 requires-python = ">=3.12"
 dependencies = [
   "anthropic>=1.11",
@@ -25,11 +26,16 @@ dependencies = [
   "uvicorn[standard]>=0.50",
 ]
 
+[project.urls]
+Homepage = "https://github.com/Vamsitallapudi9/Evidence_Compiler"
+Documentation = "https://github.com/Vamsitallapudi9/Evidence_Compiler/tree/main/docs"
+Issues = "https://github.com/Vamsitallapudi9/Evidence_Compiler/issues"
+
 [project.optional-dependencies]
 dev = ["pytest>=9.0", "ruff>=0.16", "httpx>=0.28"]
 
 [build-system]
-requires = ["setuptools>=75"]
+requires = ["setuptools>=77"]
 build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
@@ -49,3 +55,4 @@ ignore = ["B008"]  # FastAPI dependency-injection idiom
 
 [tool.ruff.lint.per-file-ignores]
 "tests/*" = ["E501"]
+"tests/conftest.py" = ["E402", "E501"]  # env must be scrubbed before app imports
