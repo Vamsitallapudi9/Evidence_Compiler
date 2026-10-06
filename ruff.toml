@@ -1,0 +1,6 @@
+extend = "backend/pyproject.toml"
+
+[lint.per-file-ignores]
+"eval/run.py" = ["E402", "E501"]
+"eval/*" = ["E501"]
+"data/demo/*" = ["E501"]

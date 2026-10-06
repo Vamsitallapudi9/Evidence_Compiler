@@ -1,0 +1,17 @@
+.venv/
+__pycache__/
+*.pyc
+*.egg-info/
+.env
+.pytest_cache/
+.ruff_cache/
+node_modules/
+dist/
+backend/var/
+data/demo/generated/
+eval/results/*.json
+eval/results/*.md
+!eval/results/.gitkeep
+.DS_Store
+eval/.work/
+eval/.cache/

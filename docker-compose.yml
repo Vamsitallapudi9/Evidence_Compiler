@@ -1,0 +1,12 @@
+# Optional: Postgres for the demo data source if you prefer Docker over Homebrew.
+# `docker compose up -d` then `make db-seed` with ADMIN_DSN below:
+#   backend/.venv/bin/python data/demo/seed_postgres.py "postgresql://postgres:postgres@localhost:5432/postgres"
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_PASSWORD: postgres
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+volumes:
+  pgdata:

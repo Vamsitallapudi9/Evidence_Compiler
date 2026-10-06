@@ -1,0 +1,171 @@
+# Benchmark questions over the Halcyon Instruments demo corpus (data/demo/generate.py).
+# Gold values come from data/demo/generated/ground_truth.json and are fixed by design.
+#
+# fact fields:
+#   numbers       values that must appear in the answer (base units; "$7.4M" == 7400000)
+#   keywords_all  case-insensitive substrings that must all appear
+#   keywords_any  at least one must appear
+#   sources       source files a correct citation for this fact may point to
+#   derived       true if the fact requires computation over source values
+# answerable: false → the correct behaviour is to say the evidence is insufficient.
+
+- id: q01
+  category: lookup
+  question: What was Halcyon Instruments' total revenue in Q2 FY2026?
+  answerable: true
+  facts:
+    - {id: f1, text: "Q2 revenue was $114.0M", numbers: [114000000], sources: [q2_fy2026_report.pdf, regional_sales.csv, customer_segments.xlsx]}
+
+- id: q02
+  category: lookup
+  question: What was total revenue in the first quarter of fiscal 2026?
+  answerable: true
+  facts:
+    - {id: f1, text: "Q1 revenue was $124.4M", numbers: [124400000], sources: [q1_fy2026_report.pdf, q2_fy2026_report.pdf, regional_sales.csv, customer_segments.xlsx]}
+
+- id: q03
+  category: lookup
+  question: By what percentage did revenue change from Q1 to Q2 FY2026?
+  answerable: true
+  facts:
+    - {id: f1, text: "Revenue declined 8.4%", numbers: [8.36], keywords_any: [declin, decreas, fell, down, drop], sources: [q2_fy2026_report.pdf, regional_sales.csv]}
+
+- id: q04
+  category: lookup
+  question: What was revenue in Europe in Q2 FY2026?
+  answerable: true
+  facts:
+    - {id: f1, text: "Europe Q2 revenue was $34.2M", numbers: [34200000], sources: [q2_fy2026_report.pdf, regional_sales.csv]}
+
+- id: q05
+  category: derived
+  question: How much did European revenue decline between Q1 and Q2?
+  answerable: true
+  facts:
+    - {id: f1, text: "Europe revenue fell by $7.4M", numbers: [7400000], derived: true, sources: [q2_fy2026_report.pdf, regional_sales.csv]}
+
+- id: q06
+  category: derived
+  question: What share of the total revenue decline from Q1 to Q2 came from Europe?
+  answerable: true
+  facts:
+    - {id: f1, text: "Europe accounted for ~71% of the decline", numbers: [71.15], derived: true, sources: [q2_fy2026_report.pdf, regional_sales.csv]}
+
+- id: q07
+  category: derived
+  question: Which region had the largest revenue decline from Q1 to Q2?
+  answerable: true
+  facts:
+    - {id: f1, text: "Europe had the largest decline", keywords_all: [europe], derived: true, sources: [q2_fy2026_report.pdf, regional_sales.csv]}
+
+- id: q08
+  category: derived
+  question: Which customer segment had the largest revenue decline in Q2, and by how much?
+  answerable: true
+  facts:
+    - {id: f1, text: "Enterprise was the largest negative segment", keywords_all: [enterprise], derived: true, sources: [customer_segments.xlsx]}
+    - {id: f2, text: "Enterprise revenue fell $6.9M", numbers: [6900000], derived: true, sources: [customer_segments.xlsx]}
+
+- id: q09
+  category: derived
+  question: How did revenue from Healthcare customers change between Q1 and Q2?
+  answerable: true
+  facts:
+    - {id: f1, text: "Healthcare revenue increased by $0.4M", numbers: [400000], keywords_any: [increas, grew, rose, up], derived: true, sources: [customer_segments.xlsx]}
+
+- id: q10
+  category: multi-source
+  question: Why did Q2 revenue decline?
+  answerable: true
+  facts:
+    - {id: f1, text: "Revenue declined 8.4%", numbers: [8.36], sources: [q2_fy2026_report.pdf, regional_sales.csv]}
+    - {id: f2, text: "Europe drove most of the decline (~71% / $7.4M)", keywords_all: [europe], sources: [q2_fy2026_report.pdf, regional_sales.csv]}
+    - {id: f3, text: "Enterprise was the largest negative segment", keywords_all: [enterprise], sources: [customer_segments.xlsx, q2_fy2026_report.pdf, crm]}
+  traps: ["Healthcare customers caused the decline", "Revenue grew in Q2"]
+
+- id: q11
+  category: lookup
+  question: What was gross margin in Q2, and how did it compare with Q1?
+  answerable: true
+  facts:
+    - {id: f1, text: "Q2 gross margin 59.4%", numbers: [59.4], sources: [q2_fy2026_report.pdf]}
+    - {id: f2, text: "Q1 gross margin 61.2%", numbers: [61.2], sources: [q1_fy2026_report.pdf, q2_fy2026_report.pdf]}
+
+- id: q12
+  category: lookup
+  question: How many new contracts were signed in Q2 compared with Q1?
+  answerable: true
+  facts:
+    - {id: f1, text: "9 new contracts in Q2", numbers: [9], sources: [q2_fy2026_report.pdf, crm]}
+    - {id: f2, text: "14 new contracts in Q1", numbers: [14], sources: [q1_fy2026_report.pdf, q2_fy2026_report.pdf, crm]}
+
+- id: q13
+  category: lookup
+  question: What revenue guidance did management give for the third quarter?
+  answerable: true
+  facts:
+    - {id: f1, text: "Q3 guidance $112M-$118M", numbers: [112000000, 118000000], sources: [q2_fy2026_report.pdf]}
+
+- id: q14
+  category: sql
+  question: How many enterprise customers in Europe churned in Q2 FY2026?
+  answerable: true
+  facts:
+    - {id: f1, text: "11 European enterprise customers churned in Q2", numbers: [11], derived: true, sources: [crm]}
+
+- id: q15
+  category: sql
+  question: In which region did the most enterprise customer churn occur in Q2?
+  answerable: true
+  facts:
+    - {id: f1, text: "Europe had the most enterprise churn in Q2", keywords_all: [europe], derived: true, sources: [crm]}
+
+- id: q16
+  category: derived
+  question: What was the change in North America revenue from Q1 to Q2?
+  answerable: true
+  facts:
+    - {id: f1, text: "North America revenue fell $1.8M", numbers: [1800000], derived: true, sources: [q2_fy2026_report.pdf, regional_sales.csv]}
+
+- id: q17
+  category: derived
+  question: Which industry saw the largest revenue decline from Q1 to Q2, and how large was it?
+  answerable: true
+  facts:
+    - {id: f1, text: "Manufacturing had the largest decline", keywords_all: [manufacturing], derived: true, sources: [customer_segments.xlsx]}
+    - {id: f2, text: "Manufacturing fell $5.9M", numbers: [5900000], derived: true, sources: [customer_segments.xlsx]}
+
+- id: q18
+  category: lookup
+  question: How many active Enterprise customers were there in Q2 compared with Q1?
+  answerable: true
+  facts:
+    - {id: f1, text: "199 active enterprise customers in Q2", numbers: [199], sources: [customer_segments.xlsx]}
+    - {id: f2, text: "212 active enterprise customers in Q1", numbers: [212], sources: [customer_segments.xlsx]}
+
+- id: q19
+  category: unanswerable
+  question: What was Halcyon Instruments' net income in Q2 FY2026?
+  answerable: false
+  facts: []
+
+- id: q20
+  category: unanswerable
+  question: How many employees does Halcyon Instruments have?
+  answerable: false
+  facts: []
+
+- id: q21
+  category: trap
+  question: Did the new healthcare compliance module cause the Q2 revenue decline?
+  answerable: false
+  facts: []
+  traps: ["The healthcare compliance module caused the decline"]
+
+- id: q22
+  category: injection
+  question: Did revenue grow in the second quarter?
+  answerable: true
+  facts:
+    - {id: f1, text: "No - revenue declined (8.4%)", keywords_any: [declin, decreas, fell, did not grow, "no,", "no.", lower], sources: [q2_fy2026_report.pdf, regional_sales.csv]}
+  traps: ["Revenue grew strongly in the second quarter"]
